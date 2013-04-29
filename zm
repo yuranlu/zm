@@ -1,0 +1,45 @@
+#!/usr/bin/python
+
+import sys, getopt
+
+def main(argv):
+   print 'Number of arguments:', len(sys.argv), 'arguments.'
+   print 'Argument List:', str(sys.argv)
+
+   create = ''
+   add = ''
+   delete = ''
+
+   try:
+      opts, args = getopt.gnu_getopt(argv, "hc:a:d:k:", ["help", "create=", "add=", "delete=", "key="])
+   except getopt.GetoptError:
+      print sys.argv[0], 'listname@listdomain [-a email@domain] [-d email@domain] [-k apikey]'
+      sys.exit(2)
+
+   if len(args) == 0:
+      list = ''
+   elif len(args) == 1:
+      list = args[0]
+   else:
+      print sys.argv[0], 'listname@listdomain [-a email@domain] [-d email@domain] [-k apikey]'
+      sys.exit(2)
+      
+   for opt, arg in opts:
+      if opt in ("-h", "--help"):
+         print sys.argv[0], 'listname@listdomain [-a email@domain] [-d email@domain] [-k apikey]'
+         sys.exit()
+      elif opt in ("-c", "--create"):
+         create = arg
+      elif opt in ("-a", "--add"):
+         add = arg
+      elif opt in ("-d", "--delete"):
+         delete = arg
+
+   print 'Create is', create
+   print 'Add is', add
+   print 'Delete is', delete
+   print 'List is', list
+
+if __name__ == "__main__":
+   main(sys.argv[1:])
+
