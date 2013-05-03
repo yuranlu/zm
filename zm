@@ -1,45 +1,84 @@
 #!/usr/bin/python
 
-import sys, getopt
+import sys, getopt, json, os.path, re, httplib, base64
 
 def main(argv):
-   print 'Number of arguments:', len(sys.argv), 'arguments.'
-   print 'Argument List:', str(sys.argv)
-
    create = ''
    add = ''
    delete = ''
+   token = ''
 
    try:
-      opts, args = getopt.gnu_getopt(argv, "hc:a:d:k:", ["help", "create=", "add=", "delete=", "key="])
+      opts, args = getopt.gnu_getopt(argv, "hc:a:d:t:", ["help", "create=", "add=", "delete=", "token="])
    except getopt.GetoptError:
-      print sys.argv[0], 'listname@listdomain [-a email@domain] [-d email@domain] [-k apikey]'
-      sys.exit(2)
+      usage(2)
 
    if len(args) == 0:
       list = ''
    elif len(args) == 1:
       list = args[0]
    else:
-      print sys.argv[0], 'listname@listdomain [-a email@domain] [-d email@domain] [-k apikey]'
-      sys.exit(2)
+      usage(2)
       
    for opt, arg in opts:
       if opt in ("-h", "--help"):
-         print sys.argv[0], 'listname@listdomain [-a email@domain] [-d email@domain] [-k apikey]'
-         sys.exit()
+         usage(0)
       elif opt in ("-c", "--create"):
          create = arg
       elif opt in ("-a", "--add"):
          add = arg
       elif opt in ("-d", "--delete"):
          delete = arg
+      elif opt in ("-t", "--token"):
+         token = arg
 
-   print 'Create is', create
-   print 'Add is', add
-   print 'Delete is', delete
-   print 'List is', list
+   if create:
+      if list:
+         usage(2);
+      else:
+         list = create
+   
+   if not token and os.path.isfile(os.path.expanduser('~/.zm')):
+      f = open(os.path.expanduser('~/.zm'), 'r')
+      token = f.read().strip()
+
+   if not token:
+      print 'Error: token is required\n'
+      sys.exit(2)
+
+   protocol = 'https'
+   domain = 'api.zeromailer.com'
+   urlbase = '/v1/lists'
+   
+   m = re.compile('(.*)@(.*)').match(list)
+
+   if m:
+      list = m.group(1)
+      listdomain = m.group(2).lower()
+      if listdomain != 'zeromailer.com' and listdomain != '0mailer.com':
+         urlbase = '/api/v1/lists'
+         protocol = 'http'
+         domain = listdomain
+      
+   auth = base64.encodestring("%s:%s" % (token, ''))
+   headers = {"Authorization" : "Basic %s" % auth}
+
+   if not create and not add and not delete and not list:
+      url = urlbase
+      method = 'GET'
+      if protocol == 'http':
+         conn = httplib.HTTPConnection(domain)
+      elif protocol == 'https':
+         conn = httplib.HTTPSConnection(domain)
+
+   conn.request(method, url, headers=headers)
+   response = conn.getresponse()
+   data = response.read()
+   print data
+
+def usage(code):
+      print sys.argv[0], '[(-c|--create)] [listname@listdomain] [(-a|--add) email@domain] [(-d|--delete) email@domain] [(-t|--token) apitoken]'
+      sys.exit(code)
 
 if __name__ == "__main__":
    main(sys.argv[1:])
-
