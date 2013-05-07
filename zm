@@ -1,15 +1,17 @@
 #!/usr/bin/python
 
-import sys, getopt, json, os.path, re, httplib, base64
+import sys, getopt, json, os.path, re, base64, requests
+from httplib import BadStatusLine
 
 def main(argv):
    create = ''
    add = ''
    delete = ''
    token = ''
+   host = ''
 
    try:
-      opts, args = getopt.gnu_getopt(argv, "hc:a:d:t:", ["help", "create=", "add=", "delete=", "token="])
+      opts, args = getopt.gnu_getopt(argv, "h:c:a:d:t:", ["host=", "create=", "add=", "delete=", "token="])
    except getopt.GetoptError:
       usage(2)
 
@@ -21,9 +23,7 @@ def main(argv):
       usage(2)
       
    for opt, arg in opts:
-      if opt in ("-h", "--help"):
-         usage(0)
-      elif opt in ("-c", "--create"):
+      if opt in ("-c", "--create"):
          create = arg
       elif opt in ("-a", "--add"):
          add = arg
@@ -31,6 +31,8 @@ def main(argv):
          delete = arg
       elif opt in ("-t", "--token"):
          token = arg
+      elif opt in ("-h", "--host"):
+         host = arg
 
    if create:
       if list:
@@ -59,26 +61,45 @@ def main(argv):
          urlbase = '/api/v1/lists'
          protocol = 'http'
          domain = listdomain
+
+   if host:
+      domain = host
+      urlbase = '/api/v1/lists'
+      protocol = 'http'
+
+   postdata = {}
+
+   if not list:
+      if not add and not delete:
+         url = urlbase
+         method = 'GET'
+      else:
+         usage(2)
+         
+   elif not create:
+      url = urlbase + '/' + list
+
+      if not add and not delete:
+         method = 'GET'
+      elif add and not delete:
+         url = url + '/emails'
+         method = 'POST'
+         postdata['value'] = add
+         
+   #print protocol, domain, url, method, urllib.urlencode(postdata), headers 
+   
+   if (method == 'GET'):
+      r = requests.get(protocol + '://' + domain + url, auth=(token, ''))
+   elif (method == 'POST'):
+      r = requests.post(protocol + '://' + domain + url, postdata, auth=(token, ''))
+   print r.headers
       
-   auth = base64.encodestring("%s:%s" % (token, ''))
-   headers = {"Authorization" : "Basic %s" % auth}
 
-   if not create and not add and not delete and not list:
-      url = urlbase
-      method = 'GET'
-      if protocol == 'http':
-         conn = httplib.HTTPConnection(domain)
-      elif protocol == 'https':
-         conn = httplib.HTTPSConnection(domain)
-
-   conn.request(method, url, headers=headers)
-   response = conn.getresponse()
-   data = response.read()
-   print data
 
 def usage(code):
-      print sys.argv[0], '[(-c|--create)] [listname@listdomain] [(-a|--add) email@domain] [(-d|--delete) email@domain] [(-t|--token) apitoken]'
+      print sys.argv[0], '[(-c|--create)] [listname] [(-h|--host) listdomain] [(-a|--add) email@domain] [(-d|--delete) email@domain] [(-t|--token) apitoken]'
       sys.exit(code)
 
 if __name__ == "__main__":
    main(sys.argv[1:])
+
