@@ -1,7 +1,6 @@
 #!/usr/bin/python
 
 import sys, getopt, json, os.path, re, base64, requests
-from httplib import BadStatusLine
 
 def main(argv):
    create = ''
@@ -85,16 +84,31 @@ def main(argv):
          url = url + '/emails'
          method = 'POST'
          postdata['value'] = add
-         
+      elif delete and not add:
+         url = url + '/emails/' + delete
+         method = 'DELETE'
+      else:
+         usage(2)
+   elif not delete:
+      url = urlbase
+      method = 'POST'
+      postdata['name'] = create
+      postdata['emails'] = add
+   else:
+      usage(2)
+
    #print protocol, domain, url, method, urllib.urlencode(postdata), headers 
    
-   if (method == 'GET'):
+   if method == 'GET':
       r = requests.get(protocol + '://' + domain + url, auth=(token, ''))
-   elif (method == 'POST'):
+   elif method == 'POST':
       r = requests.post(protocol + '://' + domain + url, postdata, auth=(token, ''))
-   print r.headers
-      
-
+   elif method == 'DELETE':
+      r = requests.delete(protocol + '://' + domain + url, auth=(token, ''))
+   try:
+      print json.dumps(json.loads(r.text), indent=4)
+   except:
+      print r.text
 
 def usage(code):
       print sys.argv[0], '[(-c|--create)] [listname] [(-h|--host) listdomain] [(-a|--add) email@domain] [(-d|--delete) email@domain] [(-t|--token) apitoken]'
