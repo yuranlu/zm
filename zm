@@ -15,9 +15,9 @@ def main(argv):
       usage(2)
 
    if len(args) == 0:
-      list = ''
+      listname = ''
    elif len(args) == 1:
-      list = args[0]
+      listname = args[0]
    else:
       usage(2)
       
@@ -34,10 +34,10 @@ def main(argv):
          host = arg
 
    if create:
-      if list:
+      if listname:
          usage(2);
       else:
-         list = create
+         listname = create
    
    if not token and os.path.isfile(os.path.expanduser('~/.zm')):
       f = open(os.path.expanduser('~/.zm'), 'r')
@@ -51,10 +51,10 @@ def main(argv):
    domain = 'api.zeromailer.com'
    urlbase = '/v1/lists'
    
-   m = re.compile('(.*)@(.*)').match(list)
+   m = re.compile('(.*)@(.*)').match(listname)
 
    if m:
-      list = m.group(1)
+      listname = m.group(1)
       listdomain = m.group(2).lower()
       if listdomain != 'zeromailer.com' and listdomain != '0mailer.com':
          urlbase = '/api/v1/lists'
@@ -68,7 +68,7 @@ def main(argv):
 
    postdata = {}
 
-   if not list:
+   if not listname:
       if not add and not delete:
          url = urlbase
          method = 'GET'
@@ -76,7 +76,7 @@ def main(argv):
          usage(2)
          
    elif not create:
-      url = urlbase + '/' + list
+      url = urlbase + '/' + listname
 
       if not add and not delete:
          method = 'GET'
@@ -106,13 +106,32 @@ def main(argv):
    elif method == 'DELETE':
       r = requests.delete(protocol + '://' + domain + url, auth=(token, ''))
    try:
-      print json.dumps(json.loads(r.text), indent=4)
+       result = json.loads(r.text)
+       if type(result) == list:
+          map(printname, result)
+       elif type(result) == dict:
+          if 'added' in result.keys():
+             print 'added:'
+          elif 'deleted' in result.keys():
+             print 'deleted:'
+          if 'emails' in result.keys():
+             map(printemail, result['emails'])
+          if 'email' in result.keys():
+             print '  ' + result['email']
+       else:
+          print json.dumps(result, indent=4)
    except:
       print r.text
 
 def usage(code):
-      print sys.argv[0], '[(-c|--create)] [listname] [(-h|--host) listdomain] [(-a|--add) email@domain] [(-d|--delete) email@domain] [(-t|--token) apitoken]'
-      sys.exit(code)
+   print sys.argv[0], '[(-c|--create)] [listname] [(-h|--host) listdomain] [(-a|--add) email@domain] [(-d|--delete) email@domain] [(-t|--token) apitoken]'
+   sys.exit(code)
+
+def printname(x):
+   print x['name']
+
+def printemail(x):
+   print '  ' + x['email']
 
 if __name__ == "__main__":
    main(sys.argv[1:])
