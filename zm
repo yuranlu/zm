@@ -39,14 +39,6 @@ def main(argv):
       else:
          listname = create
    
-   if not token and os.path.isfile(os.path.expanduser('~/.zm')):
-      f = open(os.path.expanduser('~/.zm'), 'r')
-      token = f.read().strip()
-
-   if not token:
-      print 'Error: token is required\n'
-      sys.exit(2)
-
    protocol = 'https'
    domain = 'api.zeromailer.com'
    urlbase = '/v1/lists'
@@ -65,6 +57,19 @@ def main(argv):
       domain = host
       urlbase = '/api/v1/lists'
       protocol = 'http'
+
+   if not token and os.path.isfile(os.path.expanduser('~/.zm')):
+      f = open(os.path.expanduser('~/.zm'), 'r')
+      tokenstring = f.read().strip()
+      try:
+         tokenhash = json.loads(tokenstring)
+         token = tokenhash[domain]
+      except:
+         token = tokenstring
+
+   if not token:
+      print 'Error: token is required\n'
+      sys.exit(2)
 
    postdata = {}
 
