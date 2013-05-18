@@ -8,9 +8,10 @@ def main(argv):
    delete = ''
    token = ''
    host = ''
+   deletelist = ''
 
    try:
-      opts, args = getopt.gnu_getopt(argv, "h:c:a:d:t:", ["host=", "create=", "add=", "delete=", "token="])
+      opts, args = getopt.gnu_getopt(argv, "h:c:a:d:t:D:", ["host=", "create=", "add=", "delete=", "token=", "deletelist="])
    except getopt.GetoptError:
       usage(2)
 
@@ -28,6 +29,8 @@ def main(argv):
          add = arg
       elif opt in ("-d", "--delete"):
          delete = arg
+      elif opt in ("-D", "--deletelist"):
+         deletelist = arg
       elif opt in ("-t", "--token"):
          token = arg
       elif opt in ("-h", "--host"):
@@ -39,6 +42,12 @@ def main(argv):
       else:
          listname = create
    
+   if deletelist:
+      if listname or add or delete:
+         usage(2);
+      else:
+         listname = deletelist
+
    protocol = 'https'
    domain = 'api.zeromailer.com'
    urlbase = '/v1/lists'
@@ -79,7 +88,9 @@ def main(argv):
          method = 'GET'
       else:
          usage(2)
-         
+   elif deletelist:
+      url = urlbase + '/' + listname
+      method = 'DELETE'
    elif not create:
       url = urlbase + '/' + listname
 
@@ -129,7 +140,7 @@ def main(argv):
       print r.text
 
 def usage(code):
-   print sys.argv[0], '[(-c|--create)] [listname] [(-h|--host) listdomain] [(-a|--add) email@domain] [(-d|--delete) email@domain] [(-t|--token) apitoken]'
+   print sys.argv[0], '[(-c|--create)] [(-D|--deletelist)] [listname] [(-h|--host) listdomain] [(-a|--add) email@domain] [(-d|--delete) email@domain] [(-t|--token) apitoken]'
    sys.exit(code)
 
 def printname(x):
