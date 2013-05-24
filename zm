@@ -9,9 +9,10 @@ def main(argv):
    token = ''
    host = ''
    deletelist = ''
+   rename = ''
 
    try:
-      opts, args = getopt.gnu_getopt(argv, "h:c:a:d:t:D:", ["host=", "create=", "add=", "delete=", "token=", "deletelist="])
+      opts, args = getopt.gnu_getopt(argv, "h:c:a:d:t:D:R:", ["host=", "create=", "add=", "delete=", "token=", "deletelist=", "rename="])
    except getopt.GetoptError:
       usage(2)
 
@@ -35,6 +36,8 @@ def main(argv):
          token = arg
       elif opt in ("-h", "--host"):
          host = arg
+      elif opt in ("-R", "--rename"):
+         rename = arg
 
    if create:
       if listname:
@@ -83,11 +86,16 @@ def main(argv):
    postdata = {}
 
    if not listname:
-      if not add and not delete:
+      if not add and not delete and not rename:
          url = urlbase
          method = 'GET'
       else:
          usage(2)
+   elif rename:
+      if not create and not deletelist and not add and not delete:
+         url = urlbase + '/' + listname
+         method = 'POST'
+         postdata['name'] = rename
    elif deletelist:
       url = urlbase + '/' + listname
       method = 'DELETE'
@@ -130,6 +138,8 @@ def main(argv):
              print 'added:'
           elif 'deleted' in result.keys():
              print 'deleted:'
+          elif 'renamed' in result.keys():
+             print 'renamed.'
           if 'emails' in result.keys():
              map(printemail, result['emails'])
           if 'email' in result.keys():
@@ -137,10 +147,10 @@ def main(argv):
        else:
           print json.dumps(result, indent=4)
    except:
-      print r.text
+      print r.text,
 
 def usage(code):
-   print sys.argv[0], '[(-c|--create)] [(-D|--deletelist)] [listname] [(-h|--host) listdomain] [(-a|--add) email@domain] [(-d|--delete) email@domain] [(-t|--token) apitoken]'
+   print sys.argv[0], '[(-c|--create)] [(-D|--deletelist)] [listname] [(-R|--rename newlistname)] [(-h|--host) listdomain] [(-a|--add) email@domain] [(-d|--delete) email@domain] [(-t|--token) apitoken]'
    sys.exit(code)
 
 def printname(x):
